@@ -1291,26 +1291,32 @@ void ProtocolGame::parseCyclopediaHouseAction(NetworkMessage& msg) {
 			std::cout << "Test[0]:" << std::endl;
 			std::cout << "String[1]: " << housePage << std::endl;
 			if (housePage == "") {  // own houses
-			// TODO: (select `id` from houses WHERE `owner`=" << player->getGuid())
-			
-			//convert to DEC -> HEX
-			
-			//std::stringstream ss;
-			//ss << std::hex << House->getId()->getClientId(); // int decimal_value
-			//std::string res ( ss.str() );
-			//std::cout << res;
-			
-				NetworkMessage outMsg;
-				outMsg.addByte(0xC7);
-				outMsg.add<uint16_t>(0x01);
-				outMsg.add<uint32_t>(0x4A4A);  // << res -> [0x4A4A = 19018 => Rathleton Plaza 4]
-				outMsg.addByte(1);
-				outMsg.addByte(2);
-				outMsg.addString(player->getName());  // 'rented by nick name -> own house'
-				outMsg.add<uint32_t>(0xFFFFFFFF);
-				outMsg.addByte(1);
-				outMsg.addByte(0);
-				outMsg.addByte(0);
+			std::ostringstream accountQuery;
+			accountQuery << "SELECT `id`, `name` FROM `players` WHERE `account_id` = " << player->getAccount();
+			DBResult_ptr accountResult = Database::getInstance().storeQuery(accountQuery.str());
+			if (!accountResult)
+				return;
+			std::unordered_map<std::string, House*> houses;
+			do {
+				House* house = g_game.map.houses.getHouseByPlayerId(accountResult->getNumber<uint32_t>("id"));
+				if (!house)
+					continue;
+				houses.emplace(accountResult->getString("name"), house);
+  			} while (accountResult->next());
+			  NetworkMessage outMsg;
+			  outMsg.addByte(0xC7);
+			  outMsg.add<uint16_t>(houses.size());
+			  for (auto it : houses) {
+					outMsg.add<uint32_t>(it.second->getClientId());
+					outMsg.addByte(1);
+					outMsg.addByte(2);
+					outMsg.addString(it.first);  // 'rented by nick name -> own house'
+					outMsg.add<uint32_t>(it.second->getPaidUntil()); // paid until
+					outMsg.addByte(1);
+					outMsg.addByte(0);
+					outMsg.addByte(0);
+					std::cout << it.first << " | " << it.second->getClientId() << "\n";
+				}
 				writeToOutputBuffer(outMsg);
 			} else {
 				NetworkMessage outMsg;
