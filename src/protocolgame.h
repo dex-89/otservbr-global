@@ -121,6 +121,9 @@ class ProtocolGame final : public Protocol
     void sendItemInspection(uint16_t itemId, uint8_t itemCount, const Item* item, bool cyclopedia);
     void parseInspectionObject(NetworkMessage& msg);
 
+	//-->houses
+	void parseCyclopediaHouseAction(NetworkMessage& msg);
+	//<--houses
     void parseCyclopediaCharacterInfo(NetworkMessage& msg);
 
     void parseHighscores(NetworkMessage& msg);

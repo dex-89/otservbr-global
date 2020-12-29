@@ -706,7 +706,9 @@ bool Houses::loadHousesXML(const std::string& filename)
 
 		house->setRent(pugi::cast<uint32_t>(houseNode.attribute("rent").value()));
 		house->setTownId(pugi::cast<uint32_t>(houseNode.attribute("townid").value()));
-
+		//-->houses
+		house->setClientId(pugi::cast<uint32_t>(houseNode.attribute("client").value()));
+		//<--houses
 		house->setOwner(0, false);
 	}
 	return true;

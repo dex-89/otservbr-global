@@ -176,10 +176,19 @@ class House
 		void setRent(uint32_t newRent) {
 			this->rent = newRent;
 		}
+		
 		uint32_t getRent() const {
 			return rent;
 		}
-
+		//-->houses
+		void setClientId(uint32_t newClientId) {
+			this->clientId = newClientId;
+		}
+		
+		uint32_t getClientId() const {
+			return clientId;
+		}
+		//<--houses
 		void setPayRentWarnings(uint32_t warnings) {
 			rentWarnings = warnings;
 		}
@@ -248,6 +257,9 @@ class House
 		uint32_t ownerAccountId = 0;
 		uint32_t rentWarnings = 0;
 		uint32_t rent = 0;
+		//-->houses
+		uint32_t clientId = 0;
+		//<--houses
 		uint32_t townId = 0;
 
 		Position posEntry = {};
