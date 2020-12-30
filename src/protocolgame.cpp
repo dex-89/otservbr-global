@@ -1308,28 +1308,108 @@ void ProtocolGame::parseCyclopediaHouseAction(NetworkMessage& msg) {
 			  outMsg.add<uint16_t>(houses.size());
 			  for (auto it : houses) {
 					outMsg.add<uint32_t>(it.second->getClientId());
-					outMsg.addByte(1);
-					outMsg.addByte(2);
+					outMsg.addByte(1); // 0 scheduled for renovation - 1 normal
+					outMsg.addByte(2); // 1 not rented - 2 yours ...
 					outMsg.addString(it.first);  // 'rented by nick name -> own house'
 					outMsg.add<uint32_t>(it.second->getPaidUntil()); // paid until
+					outMsg.addByte(1); // ¿yours?
+					outMsg.addByte(0);
+					outMsg.addByte(0);
+				}
+				writeToOutputBuffer(outMsg);
+			} else if (housePage == "Ab'Dendriel") {
+				NetworkMessage outMsg;
+				std::unordered_set<House*> houses;
+				for (auto it : g_game.map.houses.getHouses()){
+					if (it.second->getTownId() == 5){
+						houses.emplace(it.second);
+					}
+				}
+				outMsg.addByte(0xC7);
+			  	outMsg.add<uint16_t>(houses.size());
+				for (House* house : houses) {
+					outMsg.add<uint32_t>(house->getClientId());
 					outMsg.addByte(1);
+					outMsg.addByte(1);
+					outMsg.add<uint32_t>(house->getPaidUntil()); // paid until
+					outMsg.add<uint64_t>(1000);
+				}
+				writeToOutputBuffer(outMsg);
+			} else if (housePage == "Carlin") {
+				NetworkMessage outMsg;
+				std::unordered_set<House*> houses;
+				for (auto it : g_game.map.houses.getHouses()){
+					if (it.second->getTownId() == 8){
+						houses.emplace(it.second);
+					}
+				}
+				outMsg.addByte(0xC7);
+			  	outMsg.add<uint16_t>(houses.size());
+				for (House* house : houses) {
+					outMsg.add<uint32_t>(house->getClientId());
+					outMsg.addByte(1);
+					outMsg.addByte(2);
+					outMsg.add<uint32_t>(house->getPaidUntil()); // paid until
+					outMsg.addByte(2); // ¿yours?
 					outMsg.addByte(0);
 					outMsg.addByte(0);
-					std::cout << it.first << " | " << it.second->getClientId() << "\n";
+				}
+				writeToOutputBuffer(outMsg);
+			} else if (housePage == "Venore") {
+				NetworkMessage outMsg;
+				std::unordered_set<House*> houses;
+				for (auto it : g_game.map.houses.getHouses()){
+					if (it.second->getTownId() == 9){
+						houses.emplace(it.second);
+					}
+				}
+				outMsg.addByte(0xC7);
+			  	outMsg.add<uint16_t>(houses.size());
+				for (House* house : houses) {
+					outMsg.add<uint32_t>(house->getClientId());
+					outMsg.addByte(1);
+					outMsg.addByte(4);
+					outMsg.add<uint32_t>(house->getPaidUntil()); // paid until
+					outMsg.addByte(1); // ¿yours?
+					outMsg.addByte(0);
+					outMsg.addByte(0);
 				}
 				writeToOutputBuffer(outMsg);
 			} else {
+				Town* town = g_game.map.towns.getTown(housePage);
+				if (!town)
+					return;
+				std::unordered_set<House*> houses;
+				for (auto it : g_game.map.houses.getHouses()){
+					if (it.second->getTownId() == town->getID()){
+						houses.emplace(it.second);
+					}
+				}
 				NetworkMessage outMsg;
 				outMsg.addByte(0xC7);
-				outMsg.add<uint16_t>(0x01);
-				outMsg.add<uint32_t>(0x4A4A);  // << res -> [0x4A4A = 19018 => Rathleton Plaza 4]
-				outMsg.addByte(1);
-				outMsg.addByte(2);
-				outMsg.addString(player->getName());  // 'rented by nick name'
-				outMsg.add<uint32_t>(0xFFFFFFFF);
-				outMsg.addByte(1);
-				outMsg.addByte(0);
-				outMsg.addByte(0);
+				outMsg.add<uint16_t>(houses.size());
+				std::ostringstream query;
+				DBResult_ptr result;
+				for (House* house : houses) {
+					outMsg.add<uint32_t>(house->getClientId());
+					outMsg.addByte(1);
+					if (house->getOwner() != 0){
+						outMsg.addByte(2);
+						query.clear();
+						query << "SELECT * FROM `players` WHERE `id` = " << house->getOwner();
+						result = Database::getInstance().storeQuery(query.str());
+						if (!result)
+							return;
+						outMsg.addString(result->getString("name"));
+						outMsg.add<uint32_t>(house->getPaidUntil());
+						outMsg.addByte(1);
+						outMsg.addByte(0);
+						outMsg.addByte(0);
+					} else {
+						outMsg.addByte(0);
+						outMsg.add<uint32_t>(house->getPaidUntil());
+					}
+				}
 				writeToOutputBuffer(outMsg);
 			}
 			break;
